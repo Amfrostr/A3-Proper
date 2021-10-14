@@ -6,6 +6,8 @@ import no.ntnu.datakomm.chat.helpers.DummySupportedReceiver;
 import no.ntnu.datakomm.chat.helpers.DummyUserListingReceiver;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 public class TcpClientTest {
@@ -20,7 +22,7 @@ public class TcpClientTest {
      * Test if opening and closing connection works
      */
     @Test
-    public void testConnection() {
+    public void testConnection() throws IOException {
         // Note - this test is not very accurate. It does not actually check whether we have made
         // connection to the right server. That would be a bit difficult to do, although it is doable.
         TCPClient client = new TCPClient();
@@ -38,7 +40,7 @@ public class TcpClientTest {
      * @throws InterruptedException When test is interrupted while sleeping
      */
     @Test
-    public void testLogin() throws InterruptedException {
+    public void testLogin() throws InterruptedException, IOException {
         TCPClient client = new TCPClient();
         assertTrue(client.connect(SERVER_HOST, SERVER_PORT));
         // The incoming messages will be received on another thread
@@ -100,7 +102,7 @@ public class TcpClientTest {
      * @throws InterruptedException When test is interrupted while sleeping
      */
     @Test
-    public void testPublicMessages() throws InterruptedException {
+    public void testPublicMessages() throws InterruptedException, IOException {
         // Create three clients. When one sends a message others should receive
         TCPClient c1 = new TCPClient();
         TCPClient c2 = new TCPClient();
@@ -143,7 +145,7 @@ public class TcpClientTest {
      * @throws InterruptedException When test is interrupted while sleeping
      */
     @Test
-    public void testPrivateMessages() throws InterruptedException {
+    public void testPrivateMessages() throws InterruptedException, IOException {
         // Create three clients. One sends message to another. Third one should not receive.
         TCPClient c1 = new TCPClient();
         TCPClient c2 = new TCPClient();
@@ -220,7 +222,7 @@ public class TcpClientTest {
      * @throws InterruptedException When test is interrupted while sleeping
      */
     @Test
-    public void testUserListing() throws InterruptedException {
+    public void testUserListing() throws InterruptedException, IOException {
         // Create three clients. One sends message to another. Third one should not receive.
         TCPClient c1 = new TCPClient();
         TCPClient c2 = new TCPClient();
@@ -274,7 +276,7 @@ public class TcpClientTest {
      * @throws InterruptedException When test is interrupted while sleeping
      */
     @Test
-    public void testSupportedCommands() throws InterruptedException {
+    public void testSupportedCommands() throws InterruptedException, IOException {
         // Create a TCP chat client.
         TCPClient c1 = new TCPClient();
         assertTrue(c1.connect(SERVER_HOST, SERVER_PORT));

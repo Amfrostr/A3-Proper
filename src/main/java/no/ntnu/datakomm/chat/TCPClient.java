@@ -1,14 +1,17 @@
 package no.ntnu.datakomm.chat;
 
+import javax.security.auth.login.LoginContext;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 
 public class TCPClient {
     private PrintWriter toServer;
     private BufferedReader fromServer;
-    private Socket connection;
+    private Socket connectionSocket;
+
 
     // Hint: if you want to store a message for the last error, store it here
     private String lastError = null;
@@ -22,10 +25,21 @@ public class TCPClient {
      * @param port TCP port of the chat server
      * @return True on success, false otherwise
      */
-    public boolean connect(String host, int port) {
-        // TODO Step 1: implement this method
+    public boolean connect(String host, int port) throws IOException {
+        // TODO Step 1: implement this method   DONE?
         // Hint: Remember to process all exceptions and return false on error
         // Hint: Remember to set up all the necessary input/output stream variables
+
+        try{
+            connectionSocket = new Socket(host, port);
+            //OutputStream outputStream = this.connectionSocket.getOutputStream();
+
+            return true;
+        } catch (IOException e) {
+            System.out.println("IOException in connect()." +
+                "Host: " + host + " - port: " + port);
+        }
+
         return false;
     }
 
@@ -47,7 +61,7 @@ public class TCPClient {
      * @return true if the connection is active (opened), false if not.
      */
     public boolean isConnectionActive() {
-        return connection != null;
+        return connectionSocket != null;
     }
 
     /**
@@ -56,9 +70,23 @@ public class TCPClient {
      * @param cmd A command. It should include the command word and optional attributes, according to the protocol.
      * @return true on success, false otherwise
      */
-    private boolean sendCommand(String cmd) {
+    private boolean sendCommand(String cmd){
         // TODO Step 2: Implement this method
         // Hint: Remember to check if connection is active
+        if(!connectionSocket.isClosed()) {
+            OutputStream outputStream = null;
+            try {
+                outputStream = connectionSocket.getOutputStream();
+                outputStream.write(cmd.getBytes(StandardCharsets.UTF_8));
+
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                lastError = e.toString();
+            }
+
+        }
+
         return false;
     }
 
@@ -71,8 +99,13 @@ public class TCPClient {
     public boolean sendPublicMessage(String message) {
         // TODO Step 2: implement this method
         // Hint: Reuse sendCommand() method
+                //^Yeah, but why though?
         // Hint: update lastError if you want to store the reason for the error.
-        return false;
+        if(sendCommand(message)){
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -83,6 +116,7 @@ public class TCPClient {
     public void tryLogin(String username) {
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
+        sendCommand(username);
     }
 
     /**
@@ -126,6 +160,24 @@ public class TCPClient {
      */
     private String waitServerResponse() {
         // TODO Step 3: Implement this method
+
+        try {
+            InputStream inputStream = connectionSocket.getInputStream();
+            byte[] buffer = new byte[10000];
+            int bytesReceived = inputStream.read(buffer);
+
+            String responsePart = new String(buffer);
+
+            if(responsePart.length() > 0){
+              return responsePart;
+            }
+
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            lastError = e.toString();
+        }
+
         // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
         // with the stream and hence the socket. Probably a good idea to close the socket in that case.
 
@@ -168,6 +220,16 @@ public class TCPClient {
             // and act on it.
             // Hint: In Step 3 you need to handle only login-related responses.
             // Hint: In Step 3 reuse onLoginResult() method
+            String serverResponse = waitServerResponse();
+            switch (serverResponse){
+                case "Is message":
+                    System.out.println("Yaaar, It be a message");
+                    break;
+
+                case "Is command":
+                    System.out.println("Don't tell me what to do!");
+                    break;
+            }
 
             // TODO Step 5: update this method, handle user-list response from the server
             // Hint: In Step 5 reuse onUserList() method
