@@ -431,6 +431,7 @@ public class GUIController implements ChatListener {
     @Override
     public void onDisconnect() {
         System.out.println("Socket closed by the remote end");
+
         updateButtons(false);
     }
 }

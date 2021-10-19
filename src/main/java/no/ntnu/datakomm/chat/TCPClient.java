@@ -56,6 +56,7 @@ public class TCPClient {
     public synchronized void disconnect() {
         // TODO Step 4: implement this method - DONE?
         // Hint: remember to check if connection is active
+        /*
         if(!connectionSocket.isClosed()){
             try {
                 connectionSocket.close();
@@ -65,7 +66,8 @@ public class TCPClient {
                 System.out.println("Error on closing socket: " + e);
             }
         }
-        /*
+        */
+
         synchronized (connectionSocket){
             if(!connectionSocket.isClosed()){
                 try {
@@ -76,15 +78,22 @@ public class TCPClient {
                 }
             }
         }
-        */
+
     }
 
     /**
      * @return true if the connection is active (opened), false if not.
      */
     public boolean isConnectionActive() {
-        return connectionSocket != null;
+        if(connectionSocket != null) {
+            System.out.println(connectionSocket != null);
+            return true;
+        } else {
+            return false;
+        }
+
     }
+
 
     /**
      * Send a command to server.
@@ -180,35 +189,39 @@ public class TCPClient {
      *
      * @return one line of text (one command) received from the server
      */
-    private String waitServerResponse() {
+    private String waitServerResponse() throws IOException {
+        if (!connectionSocket.isClosed()) {
+            InputStream inputStream = connectionSocket.getInputStream();
+            try {
+                //If inputStream is null, close connection socket.
 
+                byte[] buffer = new byte[10000];
+                int bytesReceived = inputStream.read(buffer);
+
+                String responsePart = new String(buffer);
+
+                if (responsePart.length() > 0) {
+                    return responsePart;
+                }
+
+                return "";
+            } catch (IOException e) {
+                e.printStackTrace();
+                lastError = e.toString();
+            }
+
+            // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
+            // with the stream and hence the socket. Probably a good idea to close the socket in that case.
+
+            return "";
+        } else {
+            return "";
+        }
         // TODO Step 3: Implement this method - DONE
 
-        try {
-            InputStream inputStream = connectionSocket.getInputStream();
-            //If inputStream is null, close connection socket.
-            if(inputStream == null && !connectionSocket.isClosed()){
-                connectionSocket.close();
-            }
-            byte[] buffer = new byte[10000];
-            int bytesReceived = inputStream.read(buffer);
 
-            String responsePart = new String(buffer);
 
-            if(responsePart.length() > 0){
-              return responsePart;
-            }
 
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            lastError = e.toString();
-        }
-
-        // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
-        // with the stream and hence the socket. Probably a good idea to close the socket in that case.
-
-        return null;
     }
 
     /**
@@ -230,7 +243,11 @@ public class TCPClient {
     public void startListenThread() {
         // Call parseIncomingCommands() in the new thread.
         Thread t = new Thread(() -> {
-            parseIncomingCommands();
+            try {
+                parseIncomingCommands();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
         t.start();
     }
@@ -239,47 +256,51 @@ public class TCPClient {
      * Read incoming messages one by one, generate events for the listeners. A loop that runs until
      * the connection is closed.
      */
-    private void parseIncomingCommands() {
-        while (isConnectionActive()) {
-            // TODO Step 3: Implement this method - DONE??? please?
-            // Hint: Reuse waitServerResponse() method
-            // Hint: Have a switch-case (or other way) to check what type of response is received from the server
-            // and act on it.
-            // Hint: In Step 3 you need to handle only login-related responses.
-            // Hint: In Step 3 reuse onLoginResult() method
+    private void parseIncomingCommands() throws IOException {
 
-            String serverResponse = "";
-            serverResponse = waitServerResponse();
+        // TODO Step 3: Implement this method - DONE??? please?
+        // Hint: Reuse waitServerResponse() method
+        // Hint: Have a switch-case (or other way) to check what type of response is received from the server
+        // and act on it.
+        // Hint: In Step 3 you need to handle only login-related responses.
+        // Hint: In Step 3 reuse onLoginResult() method
 
-            if(serverResponse == null)
-                serverResponse = "";
+        String serverResponse = "";
+        serverResponse = waitServerResponse();
 
-            switch (serverResponse){
+        if(serverResponse == null)
+            serverResponse = "";
 
-                case "loginok\n":
-                    onLoginResult(true, "Logged in successfully.");
-                    break;
+        switch (serverResponse){
 
-                case "loginerr username already in use\n":
-                    onLoginResult(false, "Login failed.");
-                    break;
+            case "loginok\n":
+                onLoginResult(true, "Logged in successfully.");
+                break;
 
-                case "loginerr incorrect username format\n":
-                    onLoginResult(false, "username format incorrect.");
-                    break;
-            }
+            case "loginerr username already in use\n":
+                onLoginResult(false, "Login failed.");
+                break;
 
-            // TODO Step 5: update this method, handle user-list response from the server
-            // Hint: In Step 5 reuse onUserList() method
+            case "loginerr incorrect username format\n":
+                onLoginResult(false, "username format incorrect.");
+                break;
 
-            // TODO Step 7: add support for incoming chat messages from other users (types: msg, privmsg)
-            // TODO Step 7: add support for incoming message errors (type: msgerr)
-            // TODO Step 7: add support for incoming command errors (type: cmderr)
-            // Hint for Step 7: call corresponding onXXX() methods which will notify all the listeners
+            case "":
+                System.out.println("Connection is closed");
 
-            // TODO Step 8: add support for incoming supported command list (type: supported)
-
+                break;
         }
+
+        // TODO Step 5: update this method, handle user-list response from the server
+        // Hint: In Step 5 reuse onUserList() method
+
+        // TODO Step 7: add support for incoming chat messages from other users (types: msg, privmsg)
+        // TODO Step 7: add support for incoming message errors (type: msgerr)
+        // TODO Step 7: add support for incoming command errors (type: cmderr)
+        // Hint for Step 7: call corresponding onXXX() methods which will notify all the listeners
+
+        // TODO Step 8: add support for incoming supported command list (type: supported)
+
     }
 
     /**
