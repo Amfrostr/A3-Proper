@@ -13,6 +13,8 @@ import static java.lang.Thread.sleep;
 
 import javafx.collections.ObservableList;
 
+import java.io.IOException;
+
 /**
  * The graphical interface containing all the user interface controls: buttons, inputs, etc.
  * It implements the "interface logic" and sends commands to a TcpClient. To get server
@@ -222,7 +224,12 @@ public class GUIController implements ChatListener {
 
         // Run the connection in a new background thread to avoid GUI freeze
         Thread connThread = new Thread(() -> {
-            boolean connected = tcpClient.connect(host, Integer.parseInt(port));
+            boolean connected = false;
+            try {
+                connected = tcpClient.connect(host, Integer.parseInt(port));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             if (connected) {
                 // Connection established, start listening processes
                 tcpClient.addListener(this);
