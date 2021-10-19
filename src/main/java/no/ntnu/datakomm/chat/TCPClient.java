@@ -17,6 +17,7 @@ public class TCPClient {
     private String lastError = null;
 
     private final List<ChatListener> listeners = new LinkedList<>();
+    private Object InputStream;
 
     /**
      * Connect to a chat server.
@@ -53,8 +54,29 @@ public class TCPClient {
      * that no two threads call this method in parallel.
      */
     public synchronized void disconnect() {
-        // TODO Step 4: implement this method
+        // TODO Step 4: implement this method - DONE?
         // Hint: remember to check if connection is active
+        if(!connectionSocket.isClosed()){
+            try {
+                connectionSocket.close();
+                onDisconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Error on closing socket: " + e);
+            }
+        }
+        /*
+        synchronized (connectionSocket){
+            if(!connectionSocket.isClosed()){
+                try {
+                    connectionSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("Error on closing socket: " + e);
+                }
+            }
+        }
+        */
     }
 
     /**
@@ -71,7 +93,7 @@ public class TCPClient {
      * @return true on success, false otherwise
      */
     private boolean sendCommand(String cmd){
-        // TODO Step 2: Implement this method
+        // TODO Step 2: Implement this method - DONE
         // Hint: Remember to check if connection is active
         if(!connectionSocket.isClosed()) {
             OutputStream outputStream = null;
@@ -97,7 +119,7 @@ public class TCPClient {
      * @return true if message sent, false on error
      */
     public boolean sendPublicMessage(String message) {
-        // TODO Step 2: implement this method
+        // TODO Step 2: implement this method - DONE
         // Hint: Reuse sendCommand() method
                 //^Yeah, but why though?
         // Hint: update lastError if you want to store the reason for the error.
@@ -114,7 +136,7 @@ public class TCPClient {
      * @param username Username to use
      */
     public void tryLogin(String username) {
-        // TODO Step 3: implement this method
+        // TODO Step 3: implement this method - DONE
         // Hint: Reuse sendCommand() method
         sendCommand(username);
     }
@@ -159,10 +181,15 @@ public class TCPClient {
      * @return one line of text (one command) received from the server
      */
     private String waitServerResponse() {
-        // TODO Step 3: Implement this method
+
+        // TODO Step 3: Implement this method - DONE
 
         try {
             InputStream inputStream = connectionSocket.getInputStream();
+            //If inputStream is null, close connection socket.
+            if(inputStream == null && !connectionSocket.isClosed()){
+                connectionSocket.close();
+            }
             byte[] buffer = new byte[10000];
             int bytesReceived = inputStream.read(buffer);
 
@@ -214,20 +241,31 @@ public class TCPClient {
      */
     private void parseIncomingCommands() {
         while (isConnectionActive()) {
-            // TODO Step 3: Implement this method
+            // TODO Step 3: Implement this method - DONE??? please?
             // Hint: Reuse waitServerResponse() method
             // Hint: Have a switch-case (or other way) to check what type of response is received from the server
             // and act on it.
             // Hint: In Step 3 you need to handle only login-related responses.
             // Hint: In Step 3 reuse onLoginResult() method
-            String serverResponse = waitServerResponse();
+
+            String serverResponse = "";
+            serverResponse = waitServerResponse();
+
+            if(serverResponse == null)
+                serverResponse = "";
+
             switch (serverResponse){
-                case "Is message":
-                    System.out.println("Yaaar, It be a message");
+
+                case "loginok\n":
+                    onLoginResult(true, "Logged in successfully.");
                     break;
 
-                case "Is command":
-                    System.out.println("Don't tell me what to do!");
+                case "loginerr username already in use\n":
+                    onLoginResult(false, "Login failed.");
+                    break;
+
+                case "loginerr incorrect username format\n":
+                    onLoginResult(false, "username format incorrect.");
                     break;
             }
 
@@ -290,6 +328,10 @@ public class TCPClient {
     private void onDisconnect() {
         // TODO Step 4: Implement this method
         // Hint: all the onXXX() methods will be similar to onLoginResult()
+        for (ChatListener l : listeners) {
+            l.onDisconnect();
+        }
+
     }
 
     /**
