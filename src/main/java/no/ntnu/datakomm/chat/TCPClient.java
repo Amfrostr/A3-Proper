@@ -274,7 +274,6 @@ public class TCPClient {
             String commandWord = extractCmd(serverResponse);
             String message = removeCmdWord(serverResponse);
 
-
             switch (commandWord){
 
                 case "loginok":
@@ -296,9 +295,18 @@ public class TCPClient {
                 case "msgok 1":
                     System.out.println("message sent");
                     break;
+
                 case "msgok":
                     System.out.println("message sent");
                     break;
+
+                case "msg":
+                    onMsgReceived(false, extractCmd(message), removeCmdWord(message));
+
+                case "privmsg":
+                    onMsgReceived(true, extractCmd(message), removeCmdWord(message));
+                    break;
+
                 default:
                     break;
             }
@@ -391,6 +399,10 @@ public class TCPClient {
      */
     private void onMsgReceived(boolean priv, String sender, String text) {
         // TODO Step 7: Implement this method
+        for(ChatListener listener : listeners) {
+            TextMessage message = new TextMessage(sender, priv, text);
+            listener.onMessageReceived(message);
+        }
     }
 
     /**
