@@ -33,15 +33,16 @@ public class TCPClient {
 
         try{
             connectionSocket = new Socket(host, port);
-            OutputStream outputStream = this.connectionSocket.getOutputStream();
-
+            this.toServer = new PrintWriter(this.connectionSocket.getOutputStream());
+            this.fromServer = new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
             return true;
         } catch (IOException e) {
             System.out.println("IOException in connect()." +
                 "Host: " + host + " - port: " + port);
+            return false;
         }
 
-        return false;
+
     }
 
     /**
@@ -56,22 +57,12 @@ public class TCPClient {
     public synchronized void disconnect() {
         // TODO Step 4: implement this method - DONE?
         // Hint: remember to check if connection is active
-        /*
-        if(!connectionSocket.isClosed()){
-            try {
-                connectionSocket.close();
-                onDisconnect();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("Error on closing socket: " + e);
-            }
-        }
-        */
 
         synchronized (connectionSocket){
-            if(!connectionSocket.isClosed()){
+            if(isConnectionActive()){
                 try {
                     connectionSocket.close();
+                    flushCom();
                     onDisconnect();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -87,12 +78,19 @@ public class TCPClient {
      */
     public boolean isConnectionActive() {
         if(connectionSocket != null) {
-            System.out.println(connectionSocket != null);
             return true;
         } else {
             return false;
         }
 
+    }
+
+    /**
+     * Cleans the toServer and fromServer
+     */
+    public void flushCom() {
+        toServer = null;
+        fromServer = null;
     }
 
 
@@ -105,21 +103,15 @@ public class TCPClient {
     private boolean sendCommand(String cmd){
         // TODO Step 2: Implement this method - DONE
         // Hint: Remember to check if connection is active
-        if(!connectionSocket.isClosed()) {
-            OutputStream outputStream = null;
-            try {
-                outputStream = connectionSocket.getOutputStream();
-                outputStream.write(cmd.getBytes(StandardCharsets.UTF_8));
-
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
-                lastError = e.toString();
-            }
-
+        if (cmd == null || this.connectionSocket.isClosed()) {
+            return false;
+        } else {
+            this.toServer.println(cmd);
+            return true;
         }
 
-        return false;
+
+
     }
 
     /**
@@ -133,11 +125,14 @@ public class TCPClient {
         // Hint: Reuse sendCommand() method
                 //^Yeah, but why though?
         // Hint: update lastError if you want to store the reason for the error.
-        if(sendCommand("msg " + message + "\n")){
-            return true;
-        } else {
+        if(message == null || message.isBlank()){
+            this.lastError = "Can`t send an empty message";
             return false;
+        } else {
+            this.sendCommand("msg " + message + "\n");
+                return true;
         }
+
     }
 
     /**
@@ -148,7 +143,13 @@ public class TCPClient {
     public void tryLogin(String username) {
         // TODO Step 3: implement this method - DONE
         // Hint: Reuse sendCommand() method
-        sendCommand("login " + username + "\n");
+        if (username == null || username.isBlank()) {
+            this.lastError = "Username is missing";
+            System.out.println("Hi");
+        }else {
+            this.sendCommand("login " + username + "\n");
+        }
+
     }
 
     /**
@@ -159,6 +160,7 @@ public class TCPClient {
         // TODO Step 5: implement this method
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
+        this.sendCommand("users");
     }
 
     /**
@@ -192,26 +194,12 @@ public class TCPClient {
      * @return one line of text (one command) received from the server
      */
     private String waitServerResponse() throws IOException {
+        String serverResponse = null;
         if (!connectionSocket.isClosed()) {
-            InputStream inputStream = connectionSocket.getInputStream();
             try {
                 //If inputStream is null, close connection socket.
+                serverResponse = this.fromServer.readLine();
 
-                byte[] buffer = new byte[10000];
-                int bytesReceived = inputStream.read(buffer);
-
-                String responsePart = new String(buffer);
-
-                if (responsePart.length() > 0) {
-                    return responsePart;
-                }
-                else if (responsePart == null || responsePart.isEmpty()){
-                    //If stream is null or empty, something is wrong with the stream and socket.
-                    //Attempting to close via disconnect().
-                    disconnect();
-                }
-
-                return "";
             } catch (IOException e) {
                 //Calling disconnect, which attempts to close the socket.
                 disconnect();
@@ -223,15 +211,15 @@ public class TCPClient {
             // with the stream and hence the socket. Probably a good idea to close the socket in that case. - DONE?
 
 
-            return "";
+
         } else {
-            return "";
+            System.out.println("The connection is closed");
+            serverResponse = null;
         }
         // TODO Step 3: Implement this method - DONE
 
 
-
-
+        return serverResponse;
     }
 
     /**
@@ -267,7 +255,7 @@ public class TCPClient {
      * the connection is closed.
      */
     private void parseIncomingCommands() throws IOException {
-
+    while (isConnectionActive()) {
         // TODO Step 3: Implement this method - DONE??? please?
         // Hint: Reuse waitServerResponse() method
         // Hint: Have a switch-case (or other way) to check what type of response is received from the server
@@ -275,20 +263,24 @@ public class TCPClient {
         // Hint: In Step 3 you need to handle only login-related responses.
         // Hint: In Step 3 reuse onLoginResult() method
 
-        String serverResponse = "";
-        serverResponse = waitServerResponse();
+        String serverResponse = waitServerResponse();
 
-        if(serverResponse == null){
-            serverResponse = "";
-        }
+        /*
+            if(serverResponse == null){
+                serverResponse = "";
+            }
 
-        if (serverResponse.contains("loginok\n")) {
-            serverResponse = "loginok\n";
-        } else if (serverResponse.contains("loginerr username already in use\n")) {
-            serverResponse = "loginerr username already in use\n";
-        } else if (serverResponse.contains("loginerr incorrect username format\n")) {
-            serverResponse = "loginerr incorrect username format\n";
-        }
+            if (serverResponse.contains("loginok\n")) {
+                serverResponse = "loginok\n";
+            } else if (serverResponse.contains("loginerr username already in use\n")) {
+                serverResponse = "loginerr username already in use\n";
+            } else if (serverResponse.contains("loginerr incorrect username format\n")) {
+                serverResponse = "loginerr incorrect username format\n";
+            } else if (serverResponse.contains("users")){
+                serverResponse = "users";
+            }
+         */
+
 
         switch (serverResponse){
 
@@ -303,6 +295,10 @@ public class TCPClient {
             case "loginerr incorrect username format\n":
                 onLoginResult(false, "username format incorrect.");
                 break;
+
+            case "users":
+                break;
+
 
             case "":
                 System.out.println("Connection is closed");
@@ -321,6 +317,8 @@ public class TCPClient {
         // Hint for Step 7: call corresponding onXXX() methods which will notify all the listeners
 
         // TODO Step 8: add support for incoming supported command list (type: supported)
+
+    }
 
     }
 
@@ -382,7 +380,7 @@ public class TCPClient {
      * @param users List with usernames
      */
     private void onUsersList(String[] users) {
-        // TODO Step 5: Implement this method
+
     }
 
     /**
