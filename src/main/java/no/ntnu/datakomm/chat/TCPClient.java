@@ -148,7 +148,7 @@ public class TCPClient {
     public void tryLogin(String username) {
         // TODO Step 3: implement this method - DONE
         // Hint: Reuse sendCommand() method
-        sendCommand(username);
+        sendCommand("login " + username + "\n");
     }
 
     /**
