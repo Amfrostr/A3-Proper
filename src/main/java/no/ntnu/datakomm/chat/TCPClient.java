@@ -4,6 +4,8 @@ import javax.security.auth.login.LoginContext;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -264,7 +266,7 @@ public class TCPClient {
             String commandWord = extractCmd(serverResponse);
             String message = removeCmdWord(serverResponse);
 
-            switch (serverResponse){
+            switch (commandWord){
 
                 case "loginok\n":
                     onLoginResult(true, "Logged in successfully.");
@@ -284,7 +286,7 @@ public class TCPClient {
 
 
                 default:
-                    System.out.println("Connection is closed");
+                    //System.out.println("Connection is closed");
                     break;
             }
 
@@ -444,13 +446,22 @@ public class TCPClient {
      * @return String of users, separated by whitespace.
      */
     private String removeCmdWord(String inputString){
+        splitWord(inputString);
         String[] splitString = inputString.split(" ");
         StringBuilder stringBuilder = new StringBuilder();
+        ArrayList<String> arrayListSplitString = new ArrayList<>(Arrays.asList(splitString));
         for (int i = 1; i < splitString.length; i++){
             stringBuilder.append(splitString[i]).append(" ");
         }
 
         return stringBuilder.toString();
+    }
+
+    /**
+     *
+     */
+    private String splitWord(String serverMessage) {
+        return serverMessage.split(" ")[0];
     }
 
     /**
