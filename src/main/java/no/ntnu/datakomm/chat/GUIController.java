@@ -13,8 +13,6 @@ import static java.lang.Thread.sleep;
 
 import javafx.collections.ObservableList;
 
-import java.io.IOException;
-
 /**
  * The graphical interface containing all the user interface controls: buttons, inputs, etc.
  * It implements the "interface logic" and sends commands to a TcpClient. To get server
@@ -100,13 +98,9 @@ public class GUIController implements ChatListener {
             loginInput.setText("");
         });
         textInput.setOnKeyPressed(event -> {
-            if (event.getCode().equals(KeyCode.ENTER) && event.isShiftDown()) {
-                // When Shift+"Enter" is pressed in the message input box: start a new line in the message
-                textInput.setText(textInput.getText() + "\n");
-                textInput.requestFocus();
-                textInput.end();
-            } else if (event.getCode().equals(KeyCode.ENTER)) {
-                // When "Enter" is pressed in the message input box: submit the message
+            if (event.getCode().equals(KeyCode.ENTER)) {
+                // When "Enter" is pressed in the message input box: cut the newlines and submit the message
+                trimTrailingNewlines();
                 inputSubmit();
                 event.consume(); // This is needed to disable beeping sound
             }
@@ -118,6 +112,17 @@ public class GUIController implements ChatListener {
         });
         // Mouse clicked on "Help" button
         helpBtn.setOnMouseClicked(event -> tcpClient.askSupportedCommands());
+    }
+
+    /**
+     * Remove any trailing newlines from the textInput field.
+     */
+    private void trimTrailingNewlines() {
+        String message = textInput.getText();
+        while (message.length() > 0 && message.charAt(message.length() - 1) == '\n') {
+            message = message.substring(0, message.length() - 1);
+        }
+        textInput.setText(message);
     }
 
     /**
@@ -224,12 +229,7 @@ public class GUIController implements ChatListener {
 
         // Run the connection in a new background thread to avoid GUI freeze
         Thread connThread = new Thread(() -> {
-            boolean connected = false;
-            try {
-                connected = tcpClient.connect(host, Integer.parseInt(port));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            boolean connected = tcpClient.connect(host, Integer.parseInt(port));
             if (connected) {
                 // Connection established, start listening processes
                 tcpClient.addListener(this);
@@ -431,7 +431,6 @@ public class GUIController implements ChatListener {
     @Override
     public void onDisconnect() {
         System.out.println("Socket closed by the remote end");
-
         updateButtons(false);
     }
 }
