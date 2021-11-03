@@ -268,15 +268,15 @@ public class TCPClient {
 
             switch (commandWord){
 
-                case "loginok\n":
+                case "loginok":
                     onLoginResult(true, "Logged in successfully.");
                     break;
 
-                case "loginerr username already in use\n":
+                case "loginerr username already in use":
                     onLoginResult(false, "Login failed.");
                     break;
 
-                case "loginerr incorrect username format\n":
+                case "loginerr incorrect username format":
                     onLoginResult(false, "username format incorrect.");
                     break;
 
@@ -284,34 +284,12 @@ public class TCPClient {
                     onUsersList(stringArrayFromString(message, " "));
                     break;
 
-
                 default:
                     //System.out.println("Connection is closed");
                     break;
             }
 
         }
-
-        /*
-            if(serverResponse == null){
-                serverResponse = "";
-            }
-
-            if (serverResponse.contains("loginok\n")) {
-                serverResponse = "loginok\n";
-            } else if (serverResponse.contains("loginerr username already in use\n")) {
-                serverResponse = "loginerr username already in use\n";
-            } else if (serverResponse.contains("loginerr incorrect username format\n")) {
-                serverResponse = "loginerr incorrect username format\n";
-            } else if (serverResponse.contains("users")){
-                serverResponse = "users";
-            }
-         */
-
-
-
-
-
 
         // TODO Step 5: update this method, handle user-list response from the server
         // Hint: In Step 5 reuse onUserList() method
