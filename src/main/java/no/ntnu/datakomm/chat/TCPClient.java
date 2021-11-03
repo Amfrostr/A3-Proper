@@ -133,7 +133,7 @@ public class TCPClient {
         // Hint: Reuse sendCommand() method
                 //^Yeah, but why though?
         // Hint: update lastError if you want to store the reason for the error.
-        if(sendCommand(message)){
+        if(sendCommand("msg " + message + "\n")){
             return true;
         } else {
             return false;
@@ -172,6 +172,7 @@ public class TCPClient {
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
+        sendCommand("privmsg" + recipient + message + "\n");
         return false;
     }
 
@@ -277,8 +278,17 @@ public class TCPClient {
         String serverResponse = "";
         serverResponse = waitServerResponse();
 
-        if(serverResponse == null)
+        if(serverResponse == null){
             serverResponse = "";
+        }
+
+        if (serverResponse.contains("loginok\n")) {
+            serverResponse = "loginok\n";
+        } else if (serverResponse.contains("loginerr username already in use\n")) {
+            serverResponse = "loginerr username already in use\n";
+        } else if (serverResponse.contains("loginerr incorrect username format\n")) {
+            serverResponse = "loginerr incorrect username format\n";
+        }
 
         switch (serverResponse){
 
@@ -299,6 +309,8 @@ public class TCPClient {
 
                 break;
         }
+
+
 
         // TODO Step 5: update this method, handle user-list response from the server
         // Hint: In Step 5 reuse onUserList() method
@@ -356,7 +368,7 @@ public class TCPClient {
      * Internet error)
      */
     private void onDisconnect() {
-        // TODO Step 4: Implement this method - DONE?
+        // TODO Step 4: Implement this method - DONE
         // Hint: all the onXXX() methods will be similar to onLoginResult()
         for (ChatListener l : listeners) {
             l.onDisconnect();
