@@ -33,7 +33,7 @@ public class TCPClient {
 
         try{
             connectionSocket = new Socket(host, port);
-            //OutputStream outputStream = this.connectionSocket.getOutputStream();
+            OutputStream outputStream = this.connectionSocket.getOutputStream();
 
             return true;
         } catch (IOException e) {
@@ -72,6 +72,7 @@ public class TCPClient {
             if(!connectionSocket.isClosed()){
                 try {
                     connectionSocket.close();
+                    onDisconnect();
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("Error on closing socket: " + e);
@@ -203,15 +204,23 @@ public class TCPClient {
                 if (responsePart.length() > 0) {
                     return responsePart;
                 }
+                else if (responsePart == null || responsePart.isEmpty()){
+                    //If stream is null or empty, something is wrong with the stream and socket.
+                    //Attempting to close via disconnect().
+                    disconnect();
+                }
 
                 return "";
             } catch (IOException e) {
+                //Calling disconnect, which attempts to close the socket.
+                disconnect();
                 e.printStackTrace();
                 lastError = e.toString();
             }
 
             // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
-            // with the stream and hence the socket. Probably a good idea to close the socket in that case.
+            // with the stream and hence the socket. Probably a good idea to close the socket in that case. - DONE?
+
 
             return "";
         } else {
@@ -347,7 +356,7 @@ public class TCPClient {
      * Internet error)
      */
     private void onDisconnect() {
-        // TODO Step 4: Implement this method
+        // TODO Step 4: Implement this method - DONE?
         // Hint: all the onXXX() methods will be similar to onLoginResult()
         for (ChatListener l : listeners) {
             l.onDisconnect();
