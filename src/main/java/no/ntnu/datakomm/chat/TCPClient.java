@@ -302,6 +302,7 @@ public class TCPClient {
 
                 case "msg":
                     onMsgReceived(false, extractCmd(message), removeCmdWord(message));
+                    break;
 
                 case "privmsg":
                     onMsgReceived(true, extractCmd(message), removeCmdWord(message));
