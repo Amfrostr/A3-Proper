@@ -190,6 +190,7 @@ public class TCPClient {
     public void askSupportedCommands() {
         // TODO Step 8: Implement this method
         // Hint: Reuse sendCommand() method
+        this.sendCommand("help\n");
     }
 
 
@@ -308,6 +309,20 @@ public class TCPClient {
                     onMsgReceived(true, extractCmd(message), removeCmdWord(message));
                     break;
 
+                case "msgerr":
+                    onMsgError(message);
+                    break;
+
+                case "cmderr":
+                    onCmdError(message);
+                    break;
+
+                case "supported":
+                    onSupported(stringArrayFromString(message, " "));
+                    break;
+
+
+
                 default:
                     break;
             }
@@ -413,6 +428,9 @@ public class TCPClient {
      */
     private void onMsgError(String errMsg) {
         // TODO Step 7: Implement this method
+        for (ChatListener listener: listeners) {
+            listener.onMessageError(errMsg);
+        }
     }
 
     /**
@@ -422,6 +440,9 @@ public class TCPClient {
      */
     private void onCmdError(String errMsg) {
         // TODO Step 7: Implement this method
+        for(ChatListener listener: listeners) {
+            listener.onCommandError(errMsg);
+        }
     }
 
     /**
@@ -432,6 +453,9 @@ public class TCPClient {
      */
     private void onSupported(String[] commands) {
         // TODO Step 8: Implement this method
+        for (ChatListener listener: listeners) {
+            listener.onSupportedCommands(commands);
+        }
     }
 
 
