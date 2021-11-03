@@ -274,7 +274,6 @@ public class TCPClient {
             String commandWord = extractCmd(serverResponse);
             String message = removeCmdWord(serverResponse);
 
-            System.out.println(commandWord);
 
             switch (commandWord){
 
