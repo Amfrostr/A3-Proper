@@ -128,7 +128,7 @@ public class TCPClient {
             this.lastError = "Can`t send an empty message";
             return false;
         } else {
-            this.sendCommand("msg " + message + "\n");
+            this.sendCommand("msg " + message);
                 return true;
         }
 
@@ -177,7 +177,7 @@ public class TCPClient {
         if (recipient == null || recipient.isBlank() || message == null || message.isBlank()) {
             return false;
         } else {
-            sendCommand("privmsg " + recipient + " " + message + "\n");
+            sendCommand("privmsg " + recipient + " " + message);
             return true;
         }
 
