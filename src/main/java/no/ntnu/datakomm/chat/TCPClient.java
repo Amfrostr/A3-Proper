@@ -172,8 +172,15 @@ public class TCPClient {
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-        sendCommand("privmsg" + recipient + message + "\n");
-        return false;
+
+
+        if (recipient == null || recipient.isBlank() || message == null || message.isBlank()) {
+            return false;
+        } else {
+            sendCommand("privmsg " + recipient + " " + message + "\n");
+            return true;
+        }
+
     }
 
 
@@ -193,6 +200,7 @@ public class TCPClient {
      */
     private String waitServerResponse() throws IOException {
         String serverResponse = null;
+
         if (!connectionSocket.isClosed()) {
             try {
                 //If inputStream is null, close connection socket.
@@ -253,7 +261,7 @@ public class TCPClient {
      * the connection is closed.
      */
     private void parseIncomingCommands() throws IOException {
-    while (isConnectionActive()) {
+    while (!connectionSocket.isClosed()) {
         // TODO Step 3: Implement this method - DONE??? please?
         // Hint: Reuse waitServerResponse() method
         // Hint: Have a switch-case (or other way) to check what type of response is received from the server
@@ -266,17 +274,19 @@ public class TCPClient {
             String commandWord = extractCmd(serverResponse);
             String message = removeCmdWord(serverResponse);
 
+            System.out.println(commandWord);
+
             switch (commandWord){
 
-                case "loginok\n":
+                case "loginok":
                     onLoginResult(true, "Logged in successfully.");
                     break;
 
-                case "loginerr username already in use\n":
+                case "loginerr username already in use":
                     onLoginResult(false, "Login failed.");
                     break;
 
-                case "loginerr incorrect username format\n":
+                case "loginerr incorrect username format":
                     onLoginResult(false, "username format incorrect.");
                     break;
 
@@ -284,34 +294,17 @@ public class TCPClient {
                     onUsersList(stringArrayFromString(message, " "));
                     break;
 
-
+                case "msgok 1":
+                    System.out.println("message sent");
+                    break;
+                case "msgok":
+                    System.out.println("message sent");
+                    break;
                 default:
-                    //System.out.println("Connection is closed");
                     break;
             }
 
         }
-
-        /*
-            if(serverResponse == null){
-                serverResponse = "";
-            }
-
-            if (serverResponse.contains("loginok\n")) {
-                serverResponse = "loginok\n";
-            } else if (serverResponse.contains("loginerr username already in use\n")) {
-                serverResponse = "loginerr username already in use\n";
-            } else if (serverResponse.contains("loginerr incorrect username format\n")) {
-                serverResponse = "loginerr incorrect username format\n";
-            } else if (serverResponse.contains("users")){
-                serverResponse = "users";
-            }
-         */
-
-
-
-
-
 
         // TODO Step 5: update this method, handle user-list response from the server
         // Hint: In Step 5 reuse onUserList() method
@@ -446,7 +439,7 @@ public class TCPClient {
      * @return String of users, separated by whitespace.
      */
     private String removeCmdWord(String inputString){
-        splitWord(inputString);
+        extractCmd(inputString);
         String[] splitString = inputString.split(" ");
         StringBuilder stringBuilder = new StringBuilder();
         ArrayList<String> arrayListSplitString = new ArrayList<>(Arrays.asList(splitString));
@@ -458,13 +451,6 @@ public class TCPClient {
     }
 
     /**
-     *
-     */
-    private String splitWord(String serverMessage) {
-        return serverMessage.split(" ")[0];
-    }
-
-    /**
      * Splits string with selected separator.
      * @param inputString
      * @param separator
@@ -472,5 +458,11 @@ public class TCPClient {
      */
     private String[] stringArrayFromString(String inputString, String separator){
         return inputString.split(separator);
+    }
+
+    private void onMessageResult(boolean success, String errMsg) {
+        for (ChatListener l : listeners) {
+            l.onLoginResult(success, errMsg);
+        }
     }
 }
