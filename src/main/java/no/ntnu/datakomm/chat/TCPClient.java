@@ -33,7 +33,7 @@ public class TCPClient {
 
         try{
             connectionSocket = new Socket(host, port);
-            this.toServer = new PrintWriter(this.connectionSocket.getOutputStream());
+            this.toServer = new PrintWriter(this.connectionSocket.getOutputStream(), true);
             this.fromServer = new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
             return true;
         } catch (IOException e) {
@@ -109,9 +109,6 @@ public class TCPClient {
             this.toServer.println(cmd);
             return true;
         }
-
-
-
     }
 
     /**
@@ -147,9 +144,8 @@ public class TCPClient {
             this.lastError = "Username is missing";
             System.out.println("Hi");
         }else {
-            this.sendCommand("login " + username + "\n");
+            this.sendCommand("login " + username);
         }
-
     }
 
     /**
@@ -157,7 +153,7 @@ public class TCPClient {
      * clear your current user list and use events in the listener.
      */
     public void refreshUserList() {
-        // TODO Step 5: implement this method
+        // TODO Step 5: implement this method - DONE?
         // Hint: Use Wireshark and the provided chat client reference app to find out what commands the
         // client and server exchange for user listing.
         this.sendCommand("users");
@@ -264,6 +260,35 @@ public class TCPClient {
         // Hint: In Step 3 reuse onLoginResult() method
 
         String serverResponse = waitServerResponse();
+        if(serverResponse != null && !serverResponse.isBlank()){
+            String commandWord = extractCmd(serverResponse);
+            String message = removeCmdWord(serverResponse);
+
+            switch (serverResponse){
+
+                case "loginok\n":
+                    onLoginResult(true, "Logged in successfully.");
+                    break;
+
+                case "loginerr username already in use\n":
+                    onLoginResult(false, "Login failed.");
+                    break;
+
+                case "loginerr incorrect username format\n":
+                    onLoginResult(false, "username format incorrect.");
+                    break;
+
+                case "users":
+                    onUsersList(stringArrayFromString(message, " "));
+                    break;
+
+
+                default:
+                    System.out.println("Connection is closed");
+                    break;
+            }
+
+        }
 
         /*
             if(serverResponse == null){
@@ -282,29 +307,7 @@ public class TCPClient {
          */
 
 
-        switch (serverResponse){
 
-            case "loginok\n":
-                onLoginResult(true, "Logged in successfully.");
-                break;
-
-            case "loginerr username already in use\n":
-                onLoginResult(false, "Login failed.");
-                break;
-
-            case "loginerr incorrect username format\n":
-                onLoginResult(false, "username format incorrect.");
-                break;
-
-            case "users":
-                break;
-
-
-            case "":
-                System.out.println("Connection is closed");
-
-                break;
-        }
 
 
 
@@ -380,7 +383,9 @@ public class TCPClient {
      * @param users List with usernames
      */
     private void onUsersList(String[] users) {
-
+        for(ChatListener listener : listeners) {
+            listener.onUserList(users);
+        }
     }
 
     /**
@@ -420,5 +425,41 @@ public class TCPClient {
      */
     private void onSupported(String[] commands) {
         // TODO Step 8: Implement this method
+    }
+
+
+    /**
+     * Extracts the first word of a string, which in this case is assumed to be the command word.
+     * @param inputString
+     * @return The first word of the inputString, assumed to be a command word.
+     */
+    private String extractCmd(String inputString) {
+        return inputString.split(" ")[0];
+    }
+
+    /**
+     * Builds a string where the first word is removed from the original.
+     * Intended for removing the command word when asking server for list of users.
+     * @param inputString
+     * @return String of users, separated by whitespace.
+     */
+    private String removeCmdWord(String inputString){
+        String[] splitString = inputString.split(" ");
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 1; i < splitString.length; i++){
+            stringBuilder.append(splitString[i]).append(" ");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * Splits string with selected separator.
+     * @param inputString
+     * @param separator
+     * @return An array of strings.
+     */
+    private String[] stringArrayFromString(String inputString, String separator){
+        return inputString.split(separator);
     }
 }
