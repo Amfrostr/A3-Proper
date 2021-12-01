@@ -281,7 +281,7 @@ public class TCPClient {
                     onLoginResult(true, "Logged in successfully.");
                     break;
 
-                case "loginerr username already in use":
+                case "loginerr":
                     onLoginResult(false, "Login failed.");
                     break;
 
